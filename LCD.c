@@ -1,5 +1,5 @@
 #include "LCD.h"
-#include "stdtypes.h"
+
 void Enable()
 {
 	CMD_PORT|=(1<<EN);
@@ -8,7 +8,7 @@ void Enable()
 	_delay_us(700);
 }
 
-void DATA_WRT_4bit(uint8 data)
+void DATA_WRT_4bit(uint8_t data)
 {
 	CMD_PORT|=(1<<RS);
 	DATA_PORT&=(0x0f);
@@ -19,7 +19,7 @@ void DATA_WRT_4bit(uint8 data)
 	Enable();
 }
 
-void DATA_WRT_8bit(uint8 data)
+void DATA_WRT_8bit(uint8_t data)
 {
 	CMD_PORT|=(1<<RS);
 	DATA_PORT&=~(0xff);
@@ -27,7 +27,7 @@ void DATA_WRT_8bit(uint8 data)
 	Enable();
 }
 
-void CMD_WRT_4bit(uint8 cmd)
+void CMD_WRT_4bit(uint8_t cmd)
 {
 	CMD_PORT &= ~(1<<RS);
 	DATA_PORT &= ~(0xf0);
@@ -38,7 +38,7 @@ void CMD_WRT_4bit(uint8 cmd)
 	Enable();
 }
 
-void CMD_WRT_8bit(uint8 cmd)
+void CMD_WRT_8bit(uint8_t cmd)
 {
 	CMD_PORT&=~(1<<RS);
 	DATA_PORT&=~(0xff);
@@ -105,19 +105,19 @@ void LCD_Cursor_Home()
 	_delay_ms(2);
 }
 
-void LCD_CUSRSOR_POS(uint8 row , uint8 col)
+void LCD_CUSRSOR_POS(uint8_t row , uint8_t col)
 {
 	CMD_WRT_4bit((0x80)|(col+(0x40*row)));
 }
 
-void LCD_CHAR_DISP(uint8 row , uint8 col, uint8 data)
+void LCD_CHAR_DISP(uint8_t row , uint8_t col, uint8_t data)
 {
 	LCD_CUSRSOR_POS(row,col);
 	DATA_WRT_4bit(data);
 }
 
 
-void LCD_String_DISP(uint8 row , uint8 col ,uint8 *s)
+void LCD_String_DISP(uint8_t row , uint8_t col ,char *s)
 {
 	LCD_CUSRSOR_POS(row ,col);
 	while(*s)
@@ -127,7 +127,7 @@ void LCD_String_DISP(uint8 row , uint8 col ,uint8 *s)
 	
 }
 
-void LCD_NUM_DISP(uint8 row , uint8 col, uint32 num)
+void LCD_NUM_DISP(uint8_t row , uint8_t col, int num)
 {
 	LCD_CUSRSOR_POS(row ,col);
 	if (0<=num)
