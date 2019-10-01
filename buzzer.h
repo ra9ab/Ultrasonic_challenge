@@ -1,7 +1,7 @@
 #ifndef BUZZER_H
 #define BUZZER_H
-#include "timers.h"
-#include "std_types.h"
+#include "Timer_Draft.h"
+#include "stdtypes.h"
 
 extern sint8 object_detected;
 
