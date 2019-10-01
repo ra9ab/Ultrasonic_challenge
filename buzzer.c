@@ -1,5 +1,5 @@
 #include "buzzer.h"
-
+#include "DIO.h"
 void buzzer_on()
 {
 	DIO_set_pin_direction(PORT_B, PIN3,OUTPUT);
