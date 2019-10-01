@@ -1,24 +1,26 @@
 #include "application.h"
-
-
+#include "DIO.h"
+#include "buzzer.h"
 sint8 detect_object()
 {
 	uint32 result = Time_Calc();
+	sint8 object_detected;
 	if(result == MAX_TON)
 	{
-		return object_detected = 0; // object not detected
+		 object_detected = 0; // object not detected
 	}
 	else if (result < MAX_TON)
 	{
-		return object_detected = 1; // object detected. As the distance is greater than 0 && TON is less than 40 milliseconds
+		 object_detected = 1; // object detected. As the distance is greater than 0 && TON is less than 40 milliseconds
 	}
 	else 
 	{
-		return object_detected = -1;
+		object_detected = -1;
 	}
+	return object_detected;
 }
 
-uint32 count_object(object_detected)
+uint32 count_object( sint8 object_detected)
 {
 	static sint8 is_object_detected = 10;
 	static uint32 detect_counter = 0;
@@ -96,7 +98,7 @@ void led_off(uint8 led_no)
 	}
 }
 
-void distance_alarm(f32 distance)
+void distance_alarm(float32 distance)
 {
 	uint32 delay_time = (uint32) distance;
 	if (distance == MAX_DISTANCE)
