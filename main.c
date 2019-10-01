@@ -16,6 +16,6 @@ int main()
 		{
 			led_off(LED0);
 		}
-		
+		distance_alarm(distance);
 	}
 }
