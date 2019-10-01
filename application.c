@@ -98,10 +98,26 @@ void led_off(uint8 led_no)
 
 void distance_alarm(f32 distance)
 {
-	uint32 delay_time = ((uint32) distance) * MAX_DELAY_FACTOR;
-	if (distance == 40)
+	uint32 delay_time = (uint32) distance;
+	if (distance == MAX_DISTANCE)
 	{
 		buzzer_on();
-		// delay time from timer driver (delay_time);
+		// delay time from timer driver (delay_time * MAX_DELAY_FACTOR);
+		buzzer_off();
+		//delay time from timer driver (delay_time * MAX_DELAY_FACTOR);
+	}
+	else if (distance <= MIN_DISTANCE)
+	{
+		buzzer_on();
+		// delay time from timer driver ((delay_time * MIN_DELAY_FACTOR) - delay_time);
+		buzzer_off();
+		//delay time from timer driver ((delay_time * MIN_DELAY_FACTOR) - delay_time);
+	}
+	else if ((distance < MAX_DISTANCE)&&(distance > MIN_DISTANCE))
+	{
+		buzzer_on();
+		// delay time from timer driver ((delay_time * AVG_DELAY_FACTOR) - delay_time);
+		buzzer_off();
+		//delay time from timer driver ((delay_time * AVG_DELAY_FACTOR) - delay_time);
 	}
 }
