@@ -96,3 +96,12 @@ void led_off(uint8 led_no)
 	}
 }
 
+void distance_alarm(f32 distance)
+{
+	uint32 delay_time = ((uint32) distance) * MAX_DELAY_FACTOR;
+	if (distance == 40)
+	{
+		buzzer_on();
+		// delay time from timer driver (delay_time);
+	}
+}
