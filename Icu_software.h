@@ -10,7 +10,7 @@
 #define ICU_SOFTWARE_H_
 
 
-
+void external_interrupt_init();
 void Rising_edge();
 void Falling_edge();
 float Time_Calc();
