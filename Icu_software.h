@@ -14,5 +14,8 @@
 void Rising_edge();
 void Falling_edge();
 float Time_Calc();
+void Calculate_Distance (float32);
+void Ex_intr_handdling(void);
 
+extern float32 Distance ;
 #endif /* ICU_SOFTWARE_H_ */

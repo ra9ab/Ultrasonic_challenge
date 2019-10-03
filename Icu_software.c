@@ -9,60 +9,94 @@
 #include "registers.h"
 #include <avr/interrupt.h>
 #include <avr/io.h>
-uint8 volatile Flag_edge=0;
+#define  FAllING 1
+#define  RISING 0
+
 uint16 volatile Counts=0;
 uint16 volatile Over_Flow_Counts=0;
 uint8 running_flag =0;
+float32 Distance=0;
+void (*G_EXT_ptr)(void);
 
 
-void Rising_edge(){
+void Set_EXT_inT(void (*ptr)(void))
+{
+	
+	G_EXT_ptr=ptr;
+}	
+
+void Rising_edge()
+{
 	REG_SREG|=(1<<I_BIT);
     REG_GICR|=(1<<INT2_BIT);	
-    REG_MCUCSR|=(1<<6);
-	Flag_edge=0;
-	
+    REG_MCUCSR|=(1<<6);	
 	
 }
-void Falling_edge(){	
+
+void Falling_edge()
+{	
 REG_SREG|=(1<<I_BIT);
 REG_GICR|=(1<<INT2_BIT);
 REG_MCUCSR&=~(1<<6);	
 }
-void external_interrupt_init()
+
+ISR(INT2_vect)
 {
-	DDRB &= ~(1<<4);
-	Rising_edge();
-
-}
-
-ISR(INT2_vect){
-	if(Flag_edge==0){
-	  TCCR0|=0b00000010;
-	  TCNT0=0;
-	  Flag_edge++;
-	  Falling_edge();	
-		
-	}
-	else if(Flag_edge==1){
-		Counts=TCNT0;
-		Flag_edge=0;
-		running_flag=1;
-		Rising_edge();
-	}
 	
-	
-	
-	
+G_EXT_ptr();	
 	
 }
-ISR(TIMER0_OVF_vect){
+
+ISR(TIMER0_OVF_vect)
+{
 	Over_Flow_Counts++;
 }
 
-float Time_Calc(){
-	float x=0;
-	x=(Over_Flow_Counts*256+Counts)*1000;
+float Time_Calc()
+{
+	float TON=0;
+	TON=(Over_Flow_Counts*256+Counts)*(0.128);		//we used prescaler 1024 and F_CPU 8MHz
 	Over_Flow_Counts=0;
 	Counts=0;
-	return x;
+	return TON;
+}
+
+void Calculate_Distance (float32 TON)
+{
+	
+	Distance = 	(TON * 17 );
+}
+
+void Ex_intr_handdling(void)
+{
+	float TON;
+	static uint8 Flag_edge=0;
+	if(Flag_edge==RISING)
+	{
+	TCCR0|=0b00000101;
+	TCNT0=0;
+	Flag_edge++;
+	Falling_edge();
+	
+	}
+	
+	else if(Flag_edge==FAllING)
+	{
+	Counts=TCNT0;
+	Flag_edge=0;
+	TON=Time_Calc();
+	Calculate_Distance(TON);
+	
+	Rising_edge();
+	}
+		
+}
+
+
+void external_interrupt_init()
+{
+	DDRB &= ~(1<<2);
+	Rising_edge();
+	Set_EXT_inT(Ex_intr_handdling);
+
 }
