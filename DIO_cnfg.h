@@ -11,7 +11,7 @@
 
 #define NUM_OF_PINS 10
 
-#include "std_types.h"
+#include "stdtypes.h"
 
 typedef struct
 {

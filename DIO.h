@@ -10,7 +10,7 @@
 #define DIO_H_
 
 #include "DIO_cnfg.h"
-#include "REG.h"
+#include "registers.h"
 #include "macros.h"
 
 
@@ -48,7 +48,7 @@
 #define INITIALIZED			1
 #define NOT_INITIALIZED		0
 
-#define NA			0xff
+
 
 
 
