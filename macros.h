@@ -2,7 +2,7 @@
  * macros.h
  *
  *  Created on: 9 , 24, 2019
- *      Author: RGB
+ *      Author: Ya3koob
  */
 
 #ifndef MACROS_H_

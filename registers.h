@@ -9,6 +9,7 @@
 #define REGISTERS_H_
 
 #include "stdtypes.h"
+#include <avr/io.h>
 
 // SREG & Interrupts Masks and their corresponding Bits
 #define INT0_BIT 	6
