@@ -12,12 +12,14 @@
 #define AVG_DELAY_FACTOR 20
 #define MAX_DISTANCE 40
 #define MIN_DISTANCE 10
+#define DC_CHANGE_PERIOD 5000
 
 sint8 detect_object(void);
 uint32 count_object(sint8);
 void led_on(uint8);
 void led_off(uint8);
 void distance_alarm(float32);
+uint8 calculate_speed (uint8);
 
 
 #endif

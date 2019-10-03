@@ -1,6 +1,7 @@
 #include "application.h"
 #include "DIO.h"
 #include "buzzer.h"
+#include<avr/delay.h>
 sint8 detect_object()
 {
 	uint32 result = Time_Calc();
@@ -20,7 +21,7 @@ sint8 detect_object()
 	return object_detected;
 }
 
-uint32 count_object( sint8 object_detected)
+uint32 count_object(sint8 object_detected)
 {
 	static sint8 is_object_detected = 10;
 	static uint32 detect_counter = 0;
@@ -107,19 +108,30 @@ void distance_alarm(float32 distance)
 		// delay time from timer driver (delay_time * MAX_DELAY_FACTOR);
 		buzzer_off();
 		//delay time from timer driver (delay_time * MAX_DELAY_FACTOR);
+		_delay_ms(delay_time*MAX_DELAY_FACTOR);
 	}
 	else if (distance <= MIN_DISTANCE)
 	{
 		buzzer_on();
+		_delay_ms( (delay_time*MAX_DELAY_FACTOR)-delay_time);
 		// delay time from timer driver ((delay_time * MIN_DELAY_FACTOR) - delay_time);
 		buzzer_off();
+		_delay_ms( (delay_time*MAX_DELAY_FACTOR)-delay_time);
 		//delay time from timer driver ((delay_time * MIN_DELAY_FACTOR) - delay_time);
 	}
 	else if ((distance < MAX_DISTANCE)&&(distance > MIN_DISTANCE))
 	{
 		buzzer_on();
+		_delay_ms( (delay_time*AVG_DELAY_FACTOR)-delay_time);
 		// delay time from timer driver ((delay_time * AVG_DELAY_FACTOR) - delay_time);
 		buzzer_off();
+		_delay_ms( (delay_time*AVG_DELAY_FACTOR)-delay_time);
 		//delay time from timer driver ((delay_time * AVG_DELAY_FACTOR) - delay_time);
 	}
+}
+
+uint8 calculate_speed (uint8 DC)
+{
+
+	return DC;
 }
