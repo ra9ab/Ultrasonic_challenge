@@ -5,9 +5,8 @@
  *      Author: Hoba
  */
 
-#include "TIMER_Draft.h"
+#include "Timer_Draft.h"
 #include "DIO.h"
-#include <avr/io.h>
 
 
 //-------------------  Private_Global_Varibles -------------------------------//
@@ -19,7 +18,7 @@ static uint16 Preloaded_Value[]={0,0,0};
 	
 //-------------------  Private_Function --------------------------------------//
 static ACK Polling_Delay (TIMER_t );
-//static ACK interrupt_PWM ( TIMER_t );
+static ACK interrupt_PWM ( TIMER_t );
 static void Calculate_OCR_Value (TIMER_t , double  , Delay_unit_t );
 static ACK Update_Timer_OCR_Register (TIMER_t TIMER_Select);
 
@@ -61,7 +60,7 @@ ACK TIMER_init(void)
 						/**************************** START OF TIMER0 ****************************/
 		case TIMER0:
 		{
-			REG_TCNT0 = 0; //timer initial value
+			TCNT0 = 0; //timer initial value
 			/**************************** WGM MODE TIMER0 ****************************/
 			switch (TIMER_cnfg_arr[loop_index].WGM_mode)
 			{
@@ -69,8 +68,8 @@ ACK TIMER_init(void)
 				{
 					Flag_mode[loop_index]= NON_PWM_MODE;
 					/*********** NORMAL_MODE TIMER0 ********/
-					REG_TCCR0 &=  ~ ( (1u<<WGM01) | (1u<<WGM00) );	// NORMAL_MODE WGM01=0 & WGM00=0
-					//REG_TCCR0 = (1<<FOC0); //Non PWM mode
+					TCCR0 &=  ~ ( (1u<<WGM01) | (1u<<WGM00) );	// NORMAL_MODE WGM01=0 & WGM00=0
+					//TCCR0 = (1<<FOC0); //Non PWM mode
 					// END OF NORMAL_MODE
 					break;
 				}
@@ -79,9 +78,9 @@ ACK TIMER_init(void)
 				{
 					Flag_mode[loop_index]=NON_PWM_MODE;
 					/*********** CTC MODE *********/
-					REG_TCCR0 |= (1u<<WGM01) ; // CTC WGM01=1
-					REG_TCCR0 &= ( ~ (1u<<WGM00) );  // CTC  WGM00=0
-					//REG_TCCR0 = (1<<FOC0); //Non PWM mode	 Note:- //this Configurable bit cause an logical error in Toggle mode
+					TCCR0 |= (1u<<WGM01) ; // CTC WGM01=1
+					TCCR0 &= ( ~ (1u<<WGM00) );  // CTC  WGM00=0
+					//TCCR0 = (1<<FOC0); //Non PWM mode	 Note:- //this Configurable bit cause an logical error in Toggle mode
 					// END OF CTC_MODE
 					break;
 				}
@@ -90,7 +89,7 @@ ACK TIMER_init(void)
 				{
 					Flag_mode[loop_index] = PWM_MODE;
 					/*********** FAST PWM MODE *********/
-					REG_TCCR0 |= ((1u << WGM01) | (1u << WGM00)); // FAST PWM MODE WGM01=1 & WGM00=1
+					TCCR0 |= ((1u << WGM01) | (1u << WGM00)); // FAST PWM MODE WGM01=1 & WGM00=1
 					DDRB |= (1u<<PIN3); // OCO PIN OUTPUT
 					// END OF FAST_PWM_MODE
 					break;
@@ -100,8 +99,8 @@ ACK TIMER_init(void)
 				{
 					Flag_mode[loop_index] = PWM_MODE;
 					/*********** PHASE CORRECT MODE *********/
-					REG_TCCR0 &= (~(1u << WGM01)); // PHASE CORRECT MODE  WGM01=0
-					REG_TCCR0 |= (1u << WGM00);  // PHASE CORRECT MODE  WGM00=1
+					TCCR0 &= (~(1u << WGM01)); // PHASE CORRECT MODE  WGM01=0
+					TCCR0 |= (1u << WGM00);  // PHASE CORRECT MODE  WGM00=1
 					DDRB |= (1u<<PIN3);  // OCO PIN OUTPUT
 					// END OF FAST_PWM_MODE
 					break;
@@ -127,27 +126,27 @@ ACK TIMER_init(void)
 						// NORMAL_OPERATION_COM_MODE
 						case NORMAL_OPERATION:
 						{
-							REG_TCCR0 &= ~((1u << COM01) | (1u << COM00));// NORMAL COM01=0 & COM00=0
+							TCCR0 &= ~((1u << COM01) | (1u << COM00));// NORMAL COM01=0 & COM00=0
 							break;
 						}
 						// TOGGLE
 						case TOGGLE_OPERATION:
 						{
-							REG_TCCR0 &= (~(1u << COM01)); // TOGGLE COM01=0
-							REG_TCCR0 |= (1u << COM00);  // TOGGLE  COM00=1
+							TCCR0 &= (~(1u << COM01)); // TOGGLE COM01=0
+							TCCR0 |= (1u << COM00);  // TOGGLE  COM00=1
 							break;
 						}
 						// CLEAR
 						case CLEAR_OPERATION:
 						{
-							REG_TCCR0 |= (1u << COM01); // CLEAR COM01=1
-							REG_TCCR0 &= (~(1u << COM00));  // CLEAR  COM00=0
+							TCCR0 |= (1u << COM01); // CLEAR COM01=1
+							TCCR0 &= (~(1u << COM00));  // CLEAR  COM00=0
 							break;
 						}
 						// SET
 						case SET_OPERATION:
 						{
-							REG_TCCR0 |= ((1u << COM01) | (1u << COM00)); // SET COM01=1 & COM00=1
+							TCCR0 |= ((1u << COM01) | (1u << COM00)); // SET COM01=1 & COM00=1
 							break;
 						}
 						// INCORRECT INPUT IN  COM MODE
@@ -166,19 +165,21 @@ ACK TIMER_init(void)
 
 				case PWM_MODE:
 				{
+					DDR_TIMER_0 |= (1<<OC0);
+					
 					switch (TIMER_cnfg_arr[loop_index].COM_mode)
 					{
 						// INVERTING
 						case INVERTING:
 						{
-							REG_TCCR0 |= (1u << COM01); // INVERTING COM01=1
-							REG_TCCR0 &= (~(1u << COM00));  // INVERTING COM00=0
+							TCCR0 |= (1u << COM01); // INVERTING COM01=1
+							TCCR0 &= (~(1u << COM00));  // INVERTING COM00=0
 							break;
 						}
 						// NON_INVERTING
 						case NON_INVERTING:
 						{
-							REG_TCCR0 |= ((1u << COM01) | (1u << COM00)); // NON_INVERTING COM01=1 & COM00=1
+							TCCR0 |= ((1u << COM01) | (1u << COM00)); // NON_INVERTING COM01=1 & COM00=1
 							break;
 						}
 						// INCORRECT INPUT IN COM MODE
@@ -208,13 +209,13 @@ ACK TIMER_init(void)
 					{
 						case NORMAL_MODE:
 						{
-							REG_TIMSK |= (1u<<TOIE0); //Overflow Interrupt Enable
+							TIMSK |= (1u<<TOIE0); //Overflow Interrupt Enable
 							break;
 
 						}
 						case CTC_MODE:
 						{
-							REG_TIMSK |= (1u<<OCIE0); // Output Compare Match Interrupt Enable
+							TIMSK |= (1u<<OCIE0); // Output Compare Match Interrupt Enable
 							break;
 						}
 
@@ -235,7 +236,7 @@ ACK TIMER_init(void)
 				// NO INTERRUPT
 				case NO_INTERRUPT:
 				{
-					REG_TIMSK &= (~ ( (1u<<OCIE0) |(1u<<TOIE0) ) );  //Overflow Interrupt & Output Compare Match Interrupt disable
+					TIMSK &= (~ ( (1u<<OCIE0) |(1u<<TOIE0) ) );  //Overflow Interrupt & Output Compare Match Interrupt disable
 					break;
 				}
 				default:
@@ -279,8 +280,8 @@ ACK TIMER_init(void)
 					case NORMAL_MODE:
 					{
 						Flag_mode[loop_index] = NON_PWM_MODE;
-						REG_TCNT1H=0;
-						REG_TCNT1L=0;
+						TCNT1H=0;
+						TCNT1L=0;
 						//TCNT1=0;
 						NORMAL_MODE_TIMER1();
 						break;
@@ -290,8 +291,8 @@ ACK TIMER_init(void)
 					{
 
 						Flag_mode[loop_index]=NON_PWM_MODE;
-						REG_TCNT1H=0;
-						REG_TCNT1L=0;
+						TCNT1H=0;
+						TCNT1L=0;
 						//TCNT1=0;
 						CTC_OCR1A_MODE_TIMER1();
 						break;
@@ -300,14 +301,15 @@ ACK TIMER_init(void)
 					case FAST_PWM_MODE:
 					{
 						Flag_mode[loop_index]=PWM_MODE;
-						PWM_PHASE_CORRECT_OCR1A();
+						FAST_PWM_8_BIT();
 						break;
 					}
 
 					case PHASE_CORRECT_MODE:
 					{
+						//PORTA |= (1<<PA0);
 						Flag_mode[loop_index]=PWM_MODE;
-						PWM_PHASE_CORRECT_OCR1A();
+						PWM_PHASE_CORRECT_8_BIT();
 						break;
 					}
 
@@ -371,6 +373,8 @@ ACK TIMER_init(void)
 					/**************************** PWM MODE ****************************/
 					case PWM_MODE:
 					{
+						DDR_TIMER_1 |= (1<<OC1A);
+						DDR_TIMER_1 |= (1<<OC1B);
 						switch (TIMER_cnfg_arr[loop_index].COM_mode)
 						{
 							case INVERTING:
@@ -381,6 +385,7 @@ ACK TIMER_init(void)
 
 							case NON_INVERTING:
 							{
+								
 								COM_1A_PWM_NON_INVERTED();
 								break;
 							}
@@ -440,9 +445,11 @@ ACK TIMER_init(void)
 
 					case NO_INTERRUPT:
 					{
-						REG_TIMSK &= ~(1<<TOIE1) ;
-						REG_TIMSK &= ~(1<<TICIE1) ;
-						REG_TIMSK &= ~(1<<TOV1) ;
+						
+					//	PORTA |= (1<<PA2);
+						TIMSK &= ~(1<<TOIE1) ;
+						TIMSK &= ~(1<<TICIE1) ;
+						TIMSK &= ~(1<<TOV1) ;
 						break;
 					}
 
@@ -472,6 +479,8 @@ ACK TIMER_init(void)
 
 					case NO_ICU_USED:
 					{
+						
+						//PORTA |= (1<<PA3);
 						break;
 					}
 
@@ -494,7 +503,7 @@ ACK TIMER_init(void)
 		case TIMER2:
 			{
 
-			REG_TCNT2 = 0; //timer initial value
+			TCNT2 = 0; //timer initial value
 			switch (TIMER_cnfg_arr[loop_index].WGM_mode)
 			{
 
@@ -504,8 +513,8 @@ ACK TIMER_init(void)
 				{
 					Flag_mode[loop_index] = NON_PWM_MODE;
 					/*********** NORMAL_MODE *********/
-					REG_TCCR2 &=  ~ ( (1u<<WGM21) | (1u<<WGM20) );	// NORMAL_MODE WGM21=0 & WGM20=0
-					REG_TCCR2 = (1<<FOC2); //Non PWM mode
+					TCCR2 &=  ~ ( (1u<<WGM21) | (1u<<WGM20) );	// NORMAL_MODE WGM21=0 & WGM20=0
+					TCCR2 = (1<<FOC2); //Non PWM mode
 					// END OF NORMAL_MODE
 				}
 
@@ -515,9 +524,9 @@ ACK TIMER_init(void)
 
 					Flag_mode[loop_index] = NON_PWM_MODE;
 					/*********** CTC MODE *********/
-					REG_TCCR2 |= (1u<<WGM21) ; // CTC WGM21=1
-					REG_TCCR2 &= ( ~ (1u<<WGM20) );  // CTC  WGM20=0
-					//REG_TCCR2 = (1<<FOC2); //Non PWM mode
+					TCCR2 |= (1u<<WGM21) ; // CTC WGM21=1
+					TCCR2 &= ( ~ (1u<<WGM20) );  // CTC  WGM20=0
+					//TCCR2 = (1<<FOC2); //Non PWM mode
 					// END OF CTC_MODE
 					break;
 				}
@@ -526,7 +535,7 @@ ACK TIMER_init(void)
 				{
 					Flag_mode[loop_index] = PWM_MODE;
 					/*********** FAST PWM MODE *********/
-					REG_TCCR2 |= ((1u << WGM21) | (1u << WGM20)); // FAST PWM MODE WGM21=1 & WGM20=1
+					TCCR2 |= ((1u << WGM21) | (1u << WGM20)); // FAST PWM MODE WGM21=1 & WGM20=1
 					DDRD |= (1u<<PIN7); // OC2 PIN OUTPUT
 				break;
 				}
@@ -535,10 +544,11 @@ ACK TIMER_init(void)
 				{
 					Flag_mode[loop_index] = PWM_MODE;
 					/*********** PHASE CORRECT MODE *********/
-					REG_TCCR0 &= (~(1u << WGM21)); // PHASE CORRECT MODE  WGM21=0
-					REG_TCCR0 |= (1u << WGM20);  // PHASE CORRECT MODE  WGM20=1
+					TCCR2 &= (~(1u << WGM21)); // PHASE CORRECT MODE  WGM21=0
+					TCCR2 |= (1u << WGM20);  // PHASE CORRECT MODE  WGM20=1
 					DDRB |= (1u<<PIN7);  // OC2 PIN OUTPUT
 					// END OF FAST_PWM_MODE
+				
 					break;
 				}
 
@@ -565,28 +575,28 @@ ACK TIMER_init(void)
 							// NORMAL_OPERATION_COM_MODE
 							case NORMAL_OPERATION:
 							{
-								REG_TCCR2 &=  ~ ( (1u<<COM21) | (1u<<COM20) );	// NORMAL COM21=0 & COM20=0
+								TCCR2 &=  ~ ( (1u<<COM21) | (1u<<COM20) );	// NORMAL COM21=0 & COM20=0
 								break;
 							}
 
 							// TOGGLE
 							case TOGGLE_OPERATION:
 							{
-								REG_TCCR2 &= ( ~(1u<<COM21) ); // TOGGLE COM21=0
-								REG_TCCR2 |=  (1u<<COM20);  // TOGGLE  COM20=1
+								TCCR2 &= ( ~(1u<<COM21) ); // TOGGLE COM21=0
+								TCCR2 |=  (1u<<COM20);  // TOGGLE  COM20=1
 								break;
 							}
 							// CLEAR
 							case CLEAR_OPERATION:
 							{
-								REG_TCCR2 |= (1u<<COM21) ; // CLEAR COM21=1
-								REG_TCCR2 &= ( ~ (1u<<COM20) );  // CLEAR  COM20=0
+								TCCR2 |= (1u<<COM21) ; // CLEAR COM21=1
+								TCCR2 &= ( ~ (1u<<COM20) );  // CLEAR  COM20=0
 								break;
 							}
 							// SET
 							case SET_OPERATION:
 							{
-								REG_TCCR2 |= ( (1u<<COM21) | (1u<<COM20) ) ; // SET COM21=1 & COM20=1
+								TCCR2 |= ( (1u<<COM21) | (1u<<COM20) ) ; // SET COM21=1 & COM20=1
 								break;
 							}
 							// INCORRECT INPUT IN  COM MODE
@@ -604,6 +614,8 @@ ACK TIMER_init(void)
 
 					case PWM_MODE:
 					{
+						DDR_TIMER_2 |= (1<<OC2);
+						
 						switch (TIMER_cnfg_arr[loop_index].COM_mode)
 						{
 
@@ -612,14 +624,15 @@ ACK TIMER_init(void)
 							// INVERTING
 							case INVERTING:
 							{
-								REG_TCCR2 |= (1u << COM21); // INVERTING COM21=1
-								REG_TCCR2 &= (~(1u << COM20));  // INVERTING COM20=0
+								TCCR2 |= (1u << COM21); // INVERTING COM21=1
+								TCCR2 &= (~(1u << COM20));  // INVERTING COM20=0
 								break;
 							}
 							// NON_INVERTING
-							case SET:
+							case NON_INVERTING:
 							{
-								REG_TCCR2 |= ((1u << COM21) | (1u << COM20)); // NON_INVERTING COM21=1 & COM20=1
+								
+								TCCR2 |= ((1u << COM21) | (1u << COM20)); // NON_INVERTING COM21=1 & COM20=1
 								break;
 							}
 							// INCORRECT INPUT IN COM MODE
@@ -657,13 +670,13 @@ ACK TIMER_init(void)
 
 					case NORMAL_MODE:
 					{
-						REG_TIMSK |= (1u<<TOIE2); //Overflow Interrupt Enable
+						TIMSK |= (1u<<TOIE2); //Overflow Interrupt Enable
 						break;
 
 					}
 					case CTC_MODE:
 					{
-						REG_TIMSK |= (1u<<OCIE2); // Output Compare Match Interrupt Enable
+						TIMSK |= (1u<<OCIE2); // Output Compare Match Interrupt Enable
 						break;
 					}
 
@@ -684,7 +697,7 @@ ACK TIMER_init(void)
 				// NO INTERRUPT
 				case NO_INTERRUPT:
 				 {
-					REG_TIMSK &= (~ ( (1u<<OCIE2) |(1u<<TOIE2) ) );  //Overflow Interrupt & Output Compare Match Interrupt disable
+					TIMSK &= (~ ( (1u<<OCIE2) |(1u<<TOIE2) ) );  //Overflow Interrupt & Output Compare Match Interrupt disable
 					break;
 				 }
 
@@ -747,7 +760,7 @@ ACK Time_Delay ( TIMER_t TIMER_Select , double Required_Delay , Delay_unit_t Del
 
 	if (TIMER_cnfg_arr[TIMER_Select].IS_init == INITIALIZED)
 	{
-		PORTA |= (1<<PA0);
+		
 			Calculate_OCR_Value (TIMER_Select,  Required_Delay , Delay_unit);
 			Controlling_Flag=1;
 	}
@@ -833,7 +846,7 @@ ACK Time_Delay ( TIMER_t TIMER_Select , double Required_Delay , Delay_unit_t Del
 	else if ( (TIMER_cnfg_arr[TIMER_Select].WGM_mode == NORMAL_MODE) )
 
 	{
-		PORTA |= (1<<PA3);
+		
 		STATE= Update_Timer_TCNT_Register(TIMER_Select,Required_Delay,Delay_unit);
 	}
 
@@ -863,14 +876,12 @@ void Calculate_OCR_Value (TIMER_t TIMER_Select, double Required_Delay , Delay_un
 	Frequency_of_Timer[TIMER_Select] =   (F_CPU / Prescalar_Factor[TIMER_cnfg_arr[TIMER_Select].prescalar]) ;
 	OCR_Value[TIMER_Select] =  Required_Delay * Frequency_of_Timer[TIMER_Select] ;
 	
-	PORTA |= (1<<PA1);
-	//PORTC = OCR_Value[TIMER_Select] ;
 	
 	switch (Delay_unit)
 	{
 		case SECOND:
 		{
-			//OCR_Value[TIMER_Select];
+		//	OCR_Value[TIMER_Select] = OCR_Value[TIMER_Select];
 			break;
 		}
 
@@ -883,13 +894,14 @@ void Calculate_OCR_Value (TIMER_t TIMER_Select, double Required_Delay , Delay_un
 
 		case MICROSECOND:
 		{
-
-			//PORTC = (uint8)(Frequency_of_Timer[TIMER_Select]/1000000);
 			OCR_Value[TIMER_Select] = OCR_Value[TIMER_Select]/1000000;	//six zeros
-			//OCR_Value[TIMER_Select] = 10;
+		//	PORTC = OCR_Value[TIMER_Select];
+		/*
 			if(OCR_Value[TIMER_Select] == 10)
-			{PORTA |= (1<<PA2);}
-			PORTC =OCR_Value[TIMER_Select];
+			{
+				//PORTB |= (1<<PB0);
+			}
+			*/
 			break;
 		}
 
@@ -923,11 +935,11 @@ ACK Update_Timer_TCNT_Register (TIMER_t TIMER_Select, double Required_Delay , De
 		 {
 			 case TIMER0:
 			 {
-					 PORTA |= (1<<PA6);
-				 REG_TCNT0=0;	//CLEAR_TIMER0_TCNT_Register
+					
+				 TCNT0=0;	//CLEAR_TIMER0_TCNT_Register
 				 Preloaded_Value[TIMER_Select] = 255 - (OCR_Value[TIMER_Select]);
-				 REG_TCNT0 = (uint8) Preloaded_Value[TIMER_Select];	
-					PORTD=Preloaded_Value[TIMER_Select];	
+				 TCNT0 = (uint8) Preloaded_Value[TIMER_Select];	
+
 				 break;
 			 }
 
@@ -935,18 +947,18 @@ ACK Update_Timer_TCNT_Register (TIMER_t TIMER_Select, double Required_Delay , De
 			 {
 				 TCNT1 =0;	//CLEAR_TIMER1_TCNT_Register
 				 Preloaded_Value[TIMER_Select] = 65535 -  (OCR_Value[TIMER_Select])  ;
-				 //REG_TCNT1H =  Preloaded_Value/256;
-				 //REG_TCNT1L =  Preloaded_Value%256;
+				 //TCNT1H =  Preloaded_Value/256;
+				 //TCNT1L =  Preloaded_Value%256;
 				 TCNT1 = (uint16) Preloaded_Value[TIMER_Select];
-	
 				 break;
 			 }
 
 			 case TIMER2:
 			 {
-				REG_TCNT2=0;	//CLEAR_TIMER2_TCNT_Register
+				 TCNT2=0;	//CLEAR_TIMER2_TCNT_Register
 				 Preloaded_Value[TIMER_Select] = 255 - (OCR_Value[TIMER_Select])  ;
-				 REG_TCNT2 = (uint8) Preloaded_Value[TIMER_Select];
+				 TCNT2 = (uint8) Preloaded_Value[TIMER_Select];
+				 //PORT
 				 break;
 			 }
 
@@ -972,7 +984,7 @@ ACK Update_Timer_TCNT_Register (TIMER_t TIMER_Select, double Required_Delay , De
 
 ACK Polling_Delay (TIMER_t TIMER_Select) //Private Function
  {
-	 uint8 i=0;
+	 uint32 i=0;
 	 ACK STATE= AK;
 
 	 if ( (TIMER_cnfg_arr[TIMER_Select].WGM_mode == NORMAL_MODE)  && (TIMER_cnfg_arr[TIMER_Select].IS_init == INITIALIZED))
@@ -984,10 +996,9 @@ ACK Polling_Delay (TIMER_t TIMER_Select) //Private Function
 			 {
 				for(i=0; i<OVF_Counter_Loop;i++)
 				{
-					 PORTA |= (1<<PA5);
-					REG_TCNT0= (uint8) Preloaded_Value[TIMER_Select];
-					while ( (REG_TIFR & (1<<TOV0) ) == 0 );
-					REG_TIFR |= (1<<TOV0);
+					TCNT0= (uint8) Preloaded_Value[TIMER_Select];
+					while ( (TIFR & (1<<TOV0) ) == 0 );
+					TIFR |= (1<<TOV0);
 				}
 				 break;
 			 }
@@ -996,9 +1007,10 @@ ACK Polling_Delay (TIMER_t TIMER_Select) //Private Function
 			 {
 				 for(i=OVF_Counter_Loop; i>0;i--)
 				 {
+					
 					 TCNT1= (uint16) Preloaded_Value[TIMER_Select];
-					 while ( (REG_TIFR & (1<<TOV1) ) == 0 );
-					 { REG_TIFR |= 1<<TOV1 ;}
+					 while ( (TIFR & (1<<TOV1) ) == 0 );
+					 { TIFR |= 1<<TOV1 ;}
 
 				 }
 				 break;
@@ -1008,9 +1020,9 @@ ACK Polling_Delay (TIMER_t TIMER_Select) //Private Function
 			 {
 				 for(i=OVF_Counter_Loop; i>0;i--)
 				 {
-					 REG_TCNT2= (uint8) Preloaded_Value[TIMER_Select];
-					 while ( (REG_TIFR & (1<<TOV2) ) == 0 );
-					 { REG_TIFR |= 1<<TOV2 ;}
+					 TCNT2= (uint8) Preloaded_Value[TIMER_Select];
+					 while ( (TIFR & (1<<TOV2) ) == 0 );
+					 { TIFR |= 1<<TOV2 ;}
 				 }
 
 				 break;
@@ -1034,23 +1046,23 @@ ACK Polling_Delay (TIMER_t TIMER_Select) //Private Function
 		 {
 			 case TIMER0:
 			 {
-				 while( (REG_TIFR & (1<<OCF0)) == 0);
-				  REG_TIFR |= 1<<OCF0 ;		//Clear the OCF0 By Writing Logic High (one) in TIRF
+				 while( (TIFR & (1<<OCF0)) == 0);
+				  TIFR |= 1<<OCF0 ;		//Clear the OCF0 By Writing Logic High (one) in TIRF
 
 				 break;
 			 }
 
 			 case TIMER1:
 			 {
-				 while( (REG_TIFR & (1<<OCF1A)) == 0);
-				  REG_TIFR |= 1<<OCF1A ;	//Clear the OCF1A By Writing Logic High (one) in TIRF
+				 while( (TIFR & (1<<OCF1A)) == 0);
+				  TIFR |= 1<<OCF1A ;	//Clear the OCF1A By Writing Logic High (one) in TIRF
 				 break;
 			 }
 
 			 case TIMER2:
 			 {
-				 while( (REG_TIFR & (1<<OCF2)) == 0);
-				 REG_TIFR |= 1<<OCF2 ;	//Clear the OCF2 By Writing Logic High (one) in TIRF
+				 while( (TIFR & (1<<OCF2)) == 0);
+				 TIFR |= 1<<OCF2 ;	//Clear the OCF2 By Writing Logic High (one) in TIRF
 
 				 break;
 			 }
@@ -1090,51 +1102,51 @@ ACK TIMER_Start ( TIMER_t TIMER_Select )
 			 {
 				 case TIMER0:
 				 {
-					 REG_TCCR0 &= (0b11111000);		//TIMER0_CLEAR_PRESCALAR_BITS;
+					 TCCR0 &= (0b11111000);		//TIMER0_CLEAR_PRESCALAR_BITS;
 
 					 switch(TIMER_cnfg_arr[TIMER_Select].prescalar)
 					 {
 						 case PRESCALER0:
 						 {
-							 REG_TCCR0 |= (0b00000001);
+							 TCCR0 |= (0b00000001);
 							 break;
 						 }
 
 						 case PRESCALER8:
 						 {
-							 PORTA |= (1<<PA4);
-							 REG_TCCR0 |= (0b00000010);
+						
+							 TCCR0 |= (0b00000010);
 							 break;
 						 }
 
 						 case PRESCALER64:
 						 {
-							 REG_TCCR0 |= (0b00000011);
+							 TCCR0 |= (0b00000011);
 							 break;
 						 }
 
 						 case PRESCALER256:
 						 {
-							 REG_TCCR0 |= (0b00000100);
+							 TCCR0 |= (0b00000100);
 							 break;
 						 }
 
 						 case PRESCALER1024:
 						 {
 
-							 REG_TCCR0 |= (0b00000101);
+							 TCCR0 |= (0b00000101);
 							 break;
 						 }
 
 						 case EXTERNAL_CLK_RISING:
 						 {
-							 REG_TCCR0 |= (0b00000110);
+							 TCCR0 |= (0b00000110);
 							 break;
 						 }
 
 						 case EXTERNAL_CLK_FALLING:
 						 {
-							 REG_TCCR0 |= (0b00000111);
+							 TCCR0 |= (0b00000111);
 							 break;
 						 }
 
@@ -1185,7 +1197,8 @@ ACK TIMER_Start ( TIMER_t TIMER_Select )
 
 						 case PRESCALER1024:
 						 {
-
+								
+							//	PORTA |= (1<<PA4);
 							 TIMER1_PRESCALAR_1024();
 							 break;
 						 }
@@ -1217,49 +1230,50 @@ ACK TIMER_Start ( TIMER_t TIMER_Select )
 
 				 case TIMER2:
 				 {
-					 REG_TCCR2 &= (0b11111000);	//TIMER2_CLEAR_PRESCALAR_BITS;
+					 TCCR2 &= (0b11111000);	//TIMER2_CLEAR_PRESCALAR_BITS;
 
 					 switch(TIMER_cnfg_arr[TIMER_Select].prescalar)
 					 {
 						 case PRESCALER0:
 						 {
-							 REG_TCCR2 |= (0b00000001);
+							 TCCR2 |= (0b00000001);
 							 break;
 						 }
 
 						 case PRESCALER8:
 						 {
-							 REG_TCCR2 |= (0b00000010);
+							 TCCR2 |= (0b00000010);
 							 break;
 						 }
 
 						 case PRESCALER32:
 						 {
-							 REG_TCCR2 |= (0b00000011);
+							 TCCR2 |= (0b00000011);
 							 break;
 						 }
 
 						 case PRESCALER64:
 						 {
-							 REG_TCCR2 |= (0b00000100);
+							 TCCR2 |= (0b00000100);
 							 break;
 						 }
 
 						 case PRESCALER128:
 						 {
-							 REG_TCCR2 |= (0b00000101);
+							 TCCR2 |= (0b00000101);
 							 break;
 						 }
 
 						 case PRESCALER256:
 						 {
-							 REG_TCCR2 |= (0b00000110);
+							 TCCR2 |= (0b00000110);
 							 break;
 						 }
 
 						 case PRESCALER1024:
 						 {
-							 REG_TCCR2 |= (0b00000111);
+							
+							 TCCR2 |= (0b00000111);
 							 break;
 						 }
 
@@ -1290,13 +1304,12 @@ ACK TIMER_Start ( TIMER_t TIMER_Select )
 			STATE=NAK;
 		}
 
-
 	 return
 	 STATE;
  }
 
 
-/*ACK PWM_generate( TIMER_t TIMER_Select , float Required_duty_cycle , uint8 type )
+ACK PWM_generate( TIMER_t TIMER_Select , float Required_duty_cycle , uint8 type )
  {
 
 	 ACK STATE = AK ;
@@ -1309,20 +1322,25 @@ ACK TIMER_Start ( TIMER_t TIMER_Select )
 			 case TIMER0:
 			 {
 				 OCR0 = (255 * (float)(Required_duty_cycle/100));
+	
 				 break;
 			 }
 
 			 case TIMER1:
-			 {
-				 Top=65535;
-				 OCR1A= (Top*(float)(Required_duty_cycle/100));
+			 {	
+				// PORTA |= (1<<PA5);
+				 Top=255;
+				 
+				 OCR1A= (uint16) ( Top * (float)(Required_duty_cycle/100) );
 				 break;
 			 }
 
 			 case TIMER2:
 			 {
+				
 				 Top=255;
-				 REG_OCR2 = (Top*(float)(Required_duty_cycle/100));
+				 OCR2 = (Top*(float)(Required_duty_cycle/100));
+		
 				 break;
 			 }
 
@@ -1345,15 +1363,20 @@ ACK TIMER_Start ( TIMER_t TIMER_Select )
 					 if (type == INVERTING)
 					 {
 						 PWM_Value=0;
-						 DIO_write(PWM_PORT,PWM_PIN,PWM_Value);
+						 //PWM_PORT &= ~(1<<PWM_PIN);
+						 //DIO_write(PWM_PORT,PWM_PIN,PWM_Value);
+						
 					 }
 					 else if(type == NON_INVERTING)
 					 {
 						 PWM_Value=1;
-						 DIO_write(PWM_PORT,PWM_PIN,PWM_Value);
+						// PWM_PORT |= (1<<PWM_PIN);
+						// DIO_write(PWM_PORT,PWM_PIN,PWM_Value);
+						
 					 }
 					 break;
 				 }
+				 
 
 				 else
 				 {
@@ -1386,7 +1409,7 @@ ACK TIMER_Start ( TIMER_t TIMER_Select )
 	 return STATE;
  }
 
-*/
+
 ACK Update_Timer_OCR_Register (TIMER_t TIMER_Select)	//Private Function
 {
 	ACK STATE = AK;
@@ -1401,15 +1424,15 @@ ACK Update_Timer_OCR_Register (TIMER_t TIMER_Select)	//Private Function
 
 		case TIMER1:
 		{
-			//REG_OCR1AH =  OCR_Value/256;
-			//REG_OCR1AL =  OCR_Value%256;
+			//OCR1AH =  OCR_Value/256;
+			//OCR1AL =  OCR_Value%256;
 			OCR1A = (uint16) OCR_Value[TIMER_Select];
 			break;
 		}
 
 		case TIMER2:
 		{
-			REG_OCR2 = (uint8) OCR_Value[TIMER_Select];
+			OCR2 = (uint8) OCR_Value[TIMER_Select];
 			break;
 		}
 
@@ -1425,33 +1448,33 @@ ACK Update_Timer_OCR_Register (TIMER_t TIMER_Select)	//Private Function
 }
 
 
-/*ACK interrupt_PWM (TIMER_t TIMER_Select)  //Private Function
+ACK interrupt_PWM (TIMER_t TIMER_Select)  //Private Function
  {
 	 ACK STATE= AK;
 	 switch(TIMER_Select)
 	 {
 		 case TIMER0:
 		 {
-
 			 ENABLE_GLOBAL_INTERRUPT;
 			 ENABLE_OVERFLOW_INTERRUPT_TIMER0;
-			 REG_TIMSK |= (1<<OCIE0);
+			 ENABLE_OUTPUT_COMPARE_INTERRUPT_TIMER0;	
 			 break;
 		 }
+		case TIMER1:
+		{
+			ENABLE_GLOBAL_INTERRUPT;
+			ENABLE_OVERFLOW_INTERRUPT_TIMER1;
+			ENABLE_OUTPUT_COMPARE_INTERRUPT_TIMER1;
+			break;
+		}
 		 case TIMER2:
 		 {
 			 ENABLE_GLOBAL_INTERRUPT;
 			 ENABLE_OVERFLOW_INTERRUPT_TIMER2;
-			 REG_TIMSK |= (1<<OCIE2);
+			 ENABLE_OUTPUT_COMPARE_INTERRUPT_TIMER2;	
 			 break;
 		 }
-		 case TIMER1:
-		 {
-			 ENABLE_GLOBAL_INTERRUPT;
-			 ENABLE_OVERFLOW_INTERRUPT_TIMER1;
-			 REG_TIMSK |= (1<<OCIE1A);
-			 break;
-		 }
+
 		 default:
 		 {
 			 STATE = NAK;
@@ -1462,7 +1485,7 @@ ACK Update_Timer_OCR_Register (TIMER_t TIMER_Select)	//Private Function
 	 return STATE;
  }
 
-*/
+
 ACK interrupt_time_delay (TIMER_t TIMER_Select)
  {
 	 ACK STATE =AK;
@@ -1497,7 +1520,7 @@ ACK TIMER_Stop (TIMER_t TIMER_Select)
 		{
 			case TIMER0:
 			{
-				REG_TCCR0 &= (0b11111000);	//TIMER0_CLEAR_PRESCALAR_BITS;
+				TCCR0 &= (0b11111000);	//TIMER0_CLEAR_PRESCALAR_BITS;
 				break;
 			}
 
@@ -1510,7 +1533,7 @@ ACK TIMER_Stop (TIMER_t TIMER_Select)
 
 			case TIMER2:
 			{
-				REG_TCCR2 &= (0b11111000);	//TIMER2_CLEAR_PRESCALAR_BITS;
+				TCCR2 &= (0b11111000);	//TIMER2_CLEAR_PRESCALAR_BITS;
 				break;
 			}
 
@@ -1595,7 +1618,22 @@ ACK Enable_Timer_Interrupt (TIMER_t TIMER_Select)
 	return STATE;
 }
 
+void timer2_delay_ms(uint32 delay_value)
 
+{
+	TCCR2=0x0C;
+	OCR0=125;
+
+	while((delay_value>0))
+	{
+		while(get_bit(TIFR,7)==0); // 1M
+
+			set_bit(TIFR,7);
+			delay_value--;
+
+
+	}
+}
 
 /*
 ISR(TIMER1_OVF_vect)
@@ -1607,5 +1645,5 @@ ISR(TIMER2_OVF_vect)
 {
 
 }
-
 */
+

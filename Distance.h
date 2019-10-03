@@ -1,5 +1,6 @@
-#ifndef Dis_H
-#define Dis_H
+#ifndef DES_H
+#define DES_H
 #include "stdtypes.h"
-float32 Calculate_Distance();
+uint32 Calculate_Distance();
+
 #endif

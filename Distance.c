@@ -1,6 +1,7 @@
 #include "Distance.h"
-float32 Calculate_Distance()
+#include "Icu_software.h"
+uint32 Calculate_Distance()
 { 
-	float32 T_on= Time_Calc();
-	return ((T_on/2)*34);
+	return  ((TON/2.0)*34);
 }
+

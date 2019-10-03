@@ -5,16 +5,20 @@
  *  Author: Ashry
  */ 
 
-
 #ifndef ICU_SOFTWARE_H_
 #define ICU_SOFTWARE_H_
+#include "stdtypes.h"
 
-
-void external_interrupt_init(void);
-void Rising_edge(void);
-void Falling_edge(void);
-float32 Time_Calc(void);
-
-extern uint8 running_flag ;
+void external_interrupt_init();
+void Rising_edge();
+void Falling_edge();
+void Time_Calc();
+extern uint32 Over_Flow_Counts ;
+extern uint32 Counts ;
+extern uint32 x ;
+extern uint32 TON;
+extern uint32 Time ;
+extern uint8 trigger_flag ;
+extern uint32 distance ;
 
 #endif /* ICU_SOFTWARE_H_ */

@@ -14,10 +14,8 @@
 
 typedef enum {timer0=0,timer1,timer2,NUM_OF_TIMERS}TIMER_t; // types
 
-#define  F_CPU 8000000ul
-
 #define MAX_NUM_OF_TIMERS 3
-#define NA 0x55
+#define NA 0xff
 
 //----------------------------------- TIIMER_PINS ------------------------------------//
 

@@ -10,6 +10,9 @@
 
 #include "TIMER_cnfg.h"
 
+#ifndef F_CPU
+#define  F_CPU 8000000ul
+#endif
 
 //------------------- Delay_units Macro_Constants -------------------------------//
 #define SECOND		0
@@ -36,6 +39,8 @@ ACK interrupt_time_delay (TIMER_t );
 ACK Update_Timer_TCNT_Register (TIMER_t , double  , Delay_unit_t );
 ACK TIMER_Stop (TIMER_t );
 ACK Enable_Timer_Interrupt (TIMER_t );
+void timer2_delay_ms(uint32 delay_value);
+
 
 
 uint8 PWM_Value;
