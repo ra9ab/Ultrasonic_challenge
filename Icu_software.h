@@ -5,17 +5,20 @@
  *  Author: Ashry
  */ 
 
-
 #ifndef ICU_SOFTWARE_H_
 #define ICU_SOFTWARE_H_
+#include "stdtypes.h"
 
-
-
+void external_interrupt_init();
 void Rising_edge();
 void Falling_edge();
-float Time_Calc();
-void Calculate_Distance (float32);
-void Ex_intr_handdling(void);
+void Time_Calc();
+extern uint32 Over_Flow_Counts ;
+extern uint32 Counts ;
+extern uint32 x ;
+extern uint32 TON;
+extern uint32 Time ;
+extern uint8 trigger_flag ;
+extern uint32 distance ;
 
-extern float32 Distance ;
 #endif /* ICU_SOFTWARE_H_ */
